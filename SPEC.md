@@ -379,6 +379,44 @@ PluginSpec 是统一的，AI 写一次，处处可用。
 
 ---
 
+## 17. Implementation Status
+
+### ✅ Phase 1 Complete (v0.1.0)
+
+**Code:**
+- `packages/forge-spec/` — 8 files: types, errors, events, JSON Schema
+- `packages/forge-core/` — 10 files: PluginBus, Registry, Loader, Lifecycle, Context
+- `packages/config-plugin/` — config with FORGE_* env override
+- `packages/logger-plugin/` — structured JSON/text logging with child()
+- `packages/api-gateway-plugin/` — HTTP server, parametric routes, /health, /routes
+- `examples/minimal-app/` — composed app wiring all 3 plugins
+- **20/20 vitest tests passing, TypeScript strict mode clean**
+
+**Documentation:**
+- `README.md` — project overview, architecture diagram, quick start, plugin examples
+- `docs/ARCHITECTURE.md` — lifecycle, bus patterns, context injection, registry, loader, config, logger, API gateway
+- `docs/PLUGIN_SPEC.md` — complete plugin authoring guide with step-by-step
+- `docs/AI_AGENT_GUIDE.md` — AI onboarding protocol, 5-minute discovery, PluginSpec-first workflow
+- `CONTRIBUTING.md` — contribution workflow, standards, project structure
+
+**GitHub:** `phase-1` branch — ready for review
+
+### 📋 Phase 2 Planning
+
+| Feature | Priority | Notes |
+|---|---|---|
+| `forge-cli` | P0 | `forge new plugin`, `forge check`, `forge generate` |
+| Dynamic plugin loading | P0 | Load from `node_modules`, replace hardcoded wiring |
+| Plugin spec generator | P1 | Auto-generate `PluginSpec.ts` from code |
+| `@forge/db-plugin` | P1 | Database abstraction, SQL + NoSQL via spec |
+| Hot reload | P2 | Watch mode, reload plugins without restart |
+| `@forge/auth-plugin` | P2 | JWT authentication |
+| `@forge/events-plugin` | P2 | Redis-backed event bus adapter |
+| Plugin spec validator | P1 | `forge check` validates PluginSpec compliance |
+| Full example app | P1 | Real domain to prove the架子 |
+
+---
+
 *Last updated: 2026-08-27*
-*Status: ✅ CONFIRMED — Ready to implement*
+*Status: Phase 1 ✅ complete — documentation ✅ done — Phase 2 ready to start*
 
