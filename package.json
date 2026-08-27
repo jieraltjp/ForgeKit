@@ -1,0 +1,14 @@
+{
+  "name": "forgekit",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "minimal-app",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "dependencies": {
+    "@forge/spec": "workspace:*",
+    "@forge/core": "workspace:*",
+    "@forge/config-plugin": "workspace:*",
+    "@forge/logger-plugin": "workspace:*",
+    "@forge/api-gateway-plugin": "workspace:*",
+    "@types/node": "^20.0.0"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "node --loader ts-node/esm src/index.ts",
+    "start:compiled": "node dist/index.js"
+  }
+}

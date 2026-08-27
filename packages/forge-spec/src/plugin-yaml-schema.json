@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ForgeKit Plugin Manifest",
+  "type": "object",
+  "required": ["name", "version", "description", "entry"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Plugin name in kebab-case"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+      "description": "Semantic version"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "forgeVersion": {
+      "type": "string",
+      "description": "Semver range for required ForgeKit version"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Plugin names this plugin depends on"
+    },
+    "provides": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Capability names this plugin provides"
+    },
+    "events": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Event names this plugin emits"
+    },
+    "entry": {
+      "type": "string",
+      "description": "Path to entry JS file relative to plugin root"
+    },
+    "main": {
+      "type": "string",
+      "description": "Exported class name"
+    }
+  }
+}

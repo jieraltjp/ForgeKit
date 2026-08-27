@@ -1,0 +1,9 @@
+name: @forge/logger-plugin
+version: 0.1.0
+description: Structured logging with plugin tagging. Outputs JSON to stdout.
+forgeVersion: ">=0.1.0"
+dependencies: []
+provides:
+  - logger
+events: []
+entry: ./dist/index.js

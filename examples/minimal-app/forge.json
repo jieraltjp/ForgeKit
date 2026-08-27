@@ -1,0 +1,16 @@
+{
+  "name": "minimal-app",
+  "version": "0.1.0",
+  "forgeVersion": ">=0.1.0",
+  "plugins": [
+    { "name": "@forge/config-plugin", "source": "../../packages/config-plugin", "enabled": true },
+    { "name": "@forge/logger-plugin", "source": "../../packages/logger-plugin", "enabled": true },
+    { "name": "@forge/api-gateway-plugin", "source": "../../packages/api-gateway-plugin", "enabled": true }
+  ],
+  "globalConfig": {
+    "log.level": "info",
+    "log.format": "text",
+    "server.port": 3000,
+    "server.host": "0.0.0.0"
+  }
+}

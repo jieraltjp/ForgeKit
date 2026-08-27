@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "./src", "outDir": "./dist", "composite": true, "types": ["node"] },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../../packages/forge-spec" },
+    { "path": "../../packages/forge-core" },
+    { "path": "../../packages/config-plugin" },
+    { "path": "../../packages/logger-plugin" },
+    { "path": "../../packages/api-gateway-plugin" }
+  ]
+}

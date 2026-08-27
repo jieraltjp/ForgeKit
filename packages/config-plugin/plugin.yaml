@@ -1,0 +1,10 @@
+name: @forge/config-plugin
+version: 0.1.0
+description: Centralized configuration management for ForgeKit. Loads config from JSON files and environment variables.
+forgeVersion: ">=0.1.0"
+dependencies: []
+provides:
+  - config
+events:
+  - config:updated
+entry: ./dist/index.js
