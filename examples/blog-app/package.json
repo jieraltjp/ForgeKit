@@ -1,0 +1,29 @@
+{
+  "name": "blog-app",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Full blog application demonstrating all Phase 1+2 ForgeKit plugins in a real domain",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/index.js",
+    "migrate": "node dist/migrate.js"
+  },
+  "dependencies": {
+    "@forge/spec": "workspace:*",
+    "@forge/core": "workspace:*",
+    "@forge/config-plugin": "workspace:*",
+    "@forge/logger-plugin": "workspace:*",
+    "@forge/api-gateway-plugin": "workspace:*",
+    "@forge/db-plugin": "workspace:*",
+    "@forge/auth-plugin": "workspace:*",
+    "@forge/events-plugin": "workspace:*",
+    "sql.js": "^1.10.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "@types/sql.js": "^1.4.9",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^8.5.9",
+    "@types/node": "^20.0.0"
+  }
+}

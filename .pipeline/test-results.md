@@ -1,54 +1,225 @@
-# Test Results — ForgeKit Phase 1
+# ForgeKit Phase 2 Integration Test Results
 
-## Build Status: SUCCESS
+**Date:** 2026-08-27
+**Environment:** Windows 11, Node.js v24.11.1
+**Repository:** D:\Programme\jieralt\SeoTest
 
-All 7 workspace projects built without TypeScript errors.
+---
 
-### Build fixes applied (compilation/type errors only):
-1. `packages/forge-spec/tsconfig.json` — added `"composite": true` (required by project references)
-2. `packages/forge-core/tsconfig.json` — added `"composite": true`
-3. `packages/config-plugin/tsconfig.json` — added `"composite": true`
-4. `packages/logger-plugin/tsconfig.json` — added `"composite": true`
-5. `packages/api-gateway-plugin/tsconfig.json` — added `"composite": true` and `"@types/node": "^20.0.0"` dependency
-6. `examples/minimal-app/tsconfig.json` — added `"composite": true` and `"types": ["node"]`
-7. `examples/minimal-app/package.json` — added `"@types/node": "^20.0.0"` dependency
-8. `packages/api-gateway-plugin/src/index.ts` — renamed `private routes` to `private routeMap` (conflicted with public `ForgePlugin.routes` property)
-9. `packages/logger-plugin/src/PluginSpec.ts` — added missing `description` field to 6 `ParameterSpec` entries
-10. `packages/forge-core/src/plugin-registry.ts` — fixed `as YamlManifest` cast via `as unknown as YamlManifest`
-11. `packages/forge-core/src/plugin-lifecycle.test.ts` — wrapped `bus.on` handler in block to satisfy `void | Promise<void>` return type
-12. `examples/minimal-app/src/index.ts` — added missing `resolve` import from `path` and `process` import from `node:process`
-13. `pnpm-workspace.yaml` — set `allowBuilds: esbuild: true` (was `"set this to true or false"`)
-14. `package.json` — removed deprecated `pnpm` field
-15. `.npmrc` — created with `onlyBuiltDependencies[]=esbuild`
+## CHECK 1: forge-cli commands
 
-## Test Results: 1 FAILED, 19 PASSED
+### `forge list`
+- **Command:** `node packages/forge-cli/dist/index.js list`
+- **Result:** FAILS with "forge.json not found at D:\Programme\jieralt\SeoTest\forge.json"
+- **Mitigation:** `forge list --forge-json examples/minimal-app/forge.json` works correctly
+- **Evidence:**
+  ```
+  ForgeKit Plugins — minimal-app (0.2.0)
+    NAME                             SOURCE                        ENABLED
+    @forge/config-plugin              ../../packages/config-plugin yes
+    @forge/logger-plugin              ../../packages/logger-plugin yes
+    @forge/api-gateway-plugin         ../../packages/api-gateway-plugin yes
+    3 plugin(s) registered
+    Forge version: >=0.2.0
+  ```
+- **Status:** PARTIAL PASS (requires explicit `--forge-json` path; default `./forge.json` does not exist at repo root)
 
-### Pass counts per package:
-- `packages/forge-core/src/plugin-bus.test.ts` — 5 passed
-- `packages/forge-core/src/plugin-lifecycle.test.ts` — 6 passed
-- `packages/logger-plugin/src/index.test.ts` — 4 passed
-- `packages/config-plugin/src/index.test.ts` — 4 passed, **1 failed**
+### `forge check --plugin @forge/config-plugin`
+- **Result:** FAIL (exit code 1)
+- **Evidence:**
+  ```
+  FAIL — 1 errors, 0 warnings
+  ERRORS:
+    [plugin.yaml] YAML parse error: YAMLParseError: Plain value cannot start with reserved character @ at line 1, column 7:
+  name: @forge/config-plugin
+  ```
+- **Root cause:** `packages/config-plugin/plugin.yaml` has `name: @forge/config-plugin` which is invalid YAML (unquoted `@`). Same for all other plugins. This is a **bug in the plugin.yaml files** (should be `name: "@forge/config-plugin"` or `name: '@forge/config-plugin'`).
+- **Status:** FAIL
 
-### Failed test:
+### `forge check --plugin @forge/auth-plugin`
+- **Result:** FAIL (exit code 1) — same YAML issue as config-plugin
+- **Evidence:** `name: @forge/auth-plugin` is unquoted YAML string
+- **Status:** FAIL
 
-**File:** `packages/config-plugin/src/index.test.ts`
-**Test:** `"should return all config as object"`
-**Line:** 31
-**Error:**
-```
-AssertionError: expected {} to deeply equal { a: 1, b: 2 }
-```
-**Expected:** `{ a: 1, b: 2 }`
-**Received:** `{}`
+### `forge new plugin test-plugin-xyz`
+- **Result:** CRITICAL MISMATCH between source and compiled binary
+- **Compiled help output says:** `Usage: forge new [options] <plugin> <name>`
+- **Source code (dist/index.js) says:** `.command('new plugin <name>')`
+- **Actual behavior:** Running `forge new plugin test-plugin-xyz` produces `name='plugin'`, creating directory `packages/plugin/` instead of `packages/test-plugin-xyz/`
+- **Evidence:**
+  ```
+  created: package.json
+  created: tsconfig.json
+  ...
+  Plugin @forge/plugin scaffolded at packages/plugin/
+  ```
+- **Status:** FAIL (source/dist mismatch — compiled binary interprets "plugin" as positional arg, not as literal subcommand name)
 
-**Root cause:** The test creates `new ConfigPlugin({ a: 1, b: 2 })` and immediately calls `plugin.getAll()` without calling `plugin.init(ctx)` first. The `defaults` argument passed to the constructor is only seeded into the internal `Map` during `init()`. Since `init()` is never called in this test, the config map remains empty and `getAll()` returns `{}`.
+---
 
-This is a test that exercises a code path that requires `init()` to have been called first. The test does not provide a `PluginContext` mock and does not invoke `init()` before asserting on `getAll()`.
+## CHECK 2: PluginSpec Generator
 
-## What was verified
+### `node packages/plugin-spec-generator/dist/index.js packages/config-plugin`
+- **Result:** PASS (exit code 0)
+- **Output file created:** `packages/config-plugin/src/PluginSpec.generated.ts`
+- **Verification:**
+  - `api[]` — present, 5 methods extracted
+  - `events[]` — present, `config:updated` event found
+  - `dependencies[]` — present, empty array
+  - `usageExamples[]` — present, 1 example
+- **Evidence:** File contains `{ tier, api, dataModels, events, dependencies, usageExamples, autogenerated, autogeneratedAt }`
+- **Status:** PASS
 
-- 19 of 20 tests pass across all 4 test files
-- plugin-bus (emit, unsubscribe, once, no-op emit, no-op off) — all pass
-- plugin-lifecycle (init/start/stop order, reverse stop, duplicate init throw, error event emit, parallel health checks) — all pass
-- logger-plugin (default logging, threshold filtering, child tag merging, invalid level init) — all pass
-- config-plugin (undefined key, fallback, set/get, watcher notification) — pass; `getAll()` without init — fail
+---
+
+## CHECK 3: blog-app Startup
+
+### forge.json check
+- **Result:** PASS
+- **Evidence:** `examples/blog-app/forge.json` exists and lists all 6 Phase 2 plugins:
+  - `@forge/config-plugin` (workspace)
+  - `@forge/logger-plugin` (workspace)
+  - `@forge/api-gateway-plugin` (workspace)
+  - `@forge/db-plugin` (workspace)
+  - `@forge/auth-plugin` (workspace)
+  - `@forge/events-plugin` (workspace)
+
+### Server startup
+- **Result:** FAIL — server crashes on startup with EADDRINUSE on port 3000
+- **Evidence:**
+  ```
+  Migrations complete.
+  [INFO] API Gateway listening on 0.0.0.0:3000 {}
+  Error: listen EADDRINUSE: address already in use 0.0.0.0:3000
+  ```
+- **Root cause (BUG):** `examples/blog-app/src/App.ts` instantiates ApiGatewayPlugin **twice**:
+  1. Via `PluginLoader.loadAllFromForgeJson(forgeJson)` — loads it from forge.json
+  2. Manually: `const apiGatewayPlugin = new ApiGatewayPlugin()`
+  
+  Both instances are added to `allPlugins[]` and both call `start()`, causing the second to fail binding port 3000. The first instance (from loader) successfully binds before the second (manual) one fails.
+
+  ```typescript
+  // Line 19: loads apiGatewayPlugin from forge.json
+  const loadedPlugins = await loader.loadAllFromForgeJson(forgeJson);
+  // Line 27: manually creates another instance
+  const apiGatewayPlugin = new ApiGatewayPlugin();
+  // Line 29-31: both added to allPlugins
+  const allPlugins: ForgePlugin[] = [
+    configPlugin, loggerPlugin, eventsPlugin, dbPlugin, authPlugin, apiGatewayPlugin, ...loadedPlugins,
+  ];
+  ```
+
+- **Status:** FAIL (runtime bug — duplicate plugin instantiation)
+
+---
+
+## CHECK 4: forge-cli check JSON output validation
+
+### `node packages/forge-cli/dist/index.js check --plugin @forge/api-gateway-plugin --output json`
+- **Result:** Outputs valid JSON with correct schema fields
+- **Evidence:**
+  ```json
+  {
+    "valid": false,
+    "plugin": "@forge/api-gateway-plugin",
+    "errors": [...],
+    "warnings": []
+  }
+  ```
+- **Fields present:** `valid` (boolean), `errors` (array), `warnings` (array) — all match spec
+- **Status:** PASS (output format correct; failure is due to YAML parse bug in plugin.yaml)
+
+---
+
+## CHECK 5: PluginSpec schema validation (db-plugin, auth-plugin, events-plugin)
+
+### @forge/db-plugin
+- **plugin.yaml:** name, version, description, entry, forgeVersion, dependencies, provides, events — all present ✓
+  - `forgeVersion: '>=0.2.0'` ✓
+  - events: `db:query`, `db:connected`, `db:error`
+- **PluginSpec.ts:** `tier`, `api[]` (6 methods), `usageExamples[]` (3 examples) — all present ✓
+- **Events match:** plugin.yaml events === PluginSpec.events ✓
+- **Status:** PASS
+
+### @forge/auth-plugin
+- **plugin.yaml:** name, version, description, entry, forgeVersion, dependencies, provides, events — all present ✓
+  - `forgeVersion: '>=0.2.0'` ✓
+  - events: `auth:login`, `auth:token-verified`, `auth:error`
+- **PluginSpec.ts:** `tier`, `api[]` (5 methods), `usageExamples[]` (3 examples) — all present ✓
+- **Events match:** plugin.yaml events === PluginSpec.events ✓
+- **Status:** PASS
+
+### @forge/events-plugin
+- **plugin.yaml:** name, version, description, entry, forgeVersion, dependencies, provides, events — all present ✓
+  - `forgeVersion: '>=0.2.0'` ✓
+  - events: `events:adapter-changed`
+- **PluginSpec.ts:** `tier`, `api[]` (4 methods), `usageExamples[]` (3 examples) — all present ✓
+- **Events match:** plugin.yaml events === PluginSpec.events ✓
+- **Status:** PASS
+
+---
+
+## CHECK 6: Blog app route coverage
+
+### Required routes in `examples/blog-app/src/handlers/index.ts`
+- **GET /posts** — present ✓ (line 13-18: `api.registerRoute({ method: 'GET', path: '/posts', ... })`)
+- **GET /posts/:slug** — present ✓ (line 22-28)
+- **POST /posts** — present ✓ (line 32-44, with JWT auth middleware)
+- **POST /auth/login** — present ✓ (line 48-64)
+- **POST /auth/register** — present ✓ (line 68-84)
+- **Status:** PASS — all 5 required routes are implemented
+
+---
+
+## CHECK 7: Hot reload exists
+
+### `examples/minimal-app/src/hot-reload.ts`
+- **File exists:** YES ✓
+- **HotReloadManager class:** YES ✓ (line 17)
+- **watch() method:** YES ✓ (called `start(watchPattern)` at line 36)
+- **close() method:** YES ✓ (called in `stop()` at line 62: `await this.watcher?.close()`)
+- **Status:** PASS
+
+---
+
+## CHECK 8: Version consistency
+
+### forgeVersion in plugin.yaml files
+| Plugin | forgeVersion | Expected | Status |
+|--------|-------------|----------|--------|
+| api-gateway-plugin | `">=0.1.0"` | `>=0.2.0` | **FAIL** |
+| config-plugin | `">=0.1.0"` | `>=0.2.0` | **FAIL** |
+| logger-plugin | `">=0.1.0"` | `>=0.2.0` | **FAIL** |
+| db-plugin | `'>=0.2.0'` | `>=0.2.0` | PASS |
+| auth-plugin | `'>=0.2.0'` | `>=0.2.0` | PASS |
+| events-plugin | `'>=0.2.0'` | `>=0.2.0` | PASS |
+| plugin (scaffolded) | `'>=0.2.0'` | `>=0.2.0` | PASS |
+
+**Summary:** Phase 2 plugins (db, auth, events) correctly have `>=0.2.0`. Phase 1 plugins (api-gateway, config, logger) still have `>=0.1.0` from their original implementation — they were not updated as part of Phase 2.
+- **Status:** PARTIAL PASS (Phase 2 plugins correct; Phase 1 plugins not updated)
+
+---
+
+## Summary
+
+| Check | Status | Notes |
+|--------|--------|-------|
+| 1. forge-cli list | PARTIAL PASS | Requires explicit --forge-json path |
+| 1. forge-cli check | FAIL | YAML parse error: unquoted `@` in plugin.yaml name |
+| 1. forge-cli new plugin | FAIL | Source/dist mismatch — compiled binary wrong command signature |
+| 2. PluginSpec generator | PASS | Creates PluginSpec.generated.ts with all required fields |
+| 3. blog-app startup | FAIL | EADDRINUSE: duplicate ApiGatewayPlugin instantiation in App.ts |
+| 3. blog-app forge.json | PASS | All 6 Phase 2 plugins listed |
+| 4. check JSON output | PASS | Valid JSON with valid/errors/warnings fields |
+| 5. db-plugin schema | PASS | All required fields, events match |
+| 5. auth-plugin schema | PASS | All required fields, events match |
+| 5. events-plugin schema | PASS | All required fields, events match |
+| 6. Blog route coverage | PASS | All 5 required routes present |
+| 7. Hot reload | PASS | HotReloadManager with watch() and stop()/close() |
+| 8. Version consistency | PARTIAL PASS | Phase 2 plugins correct; Phase 1 plugins not updated to >=0.2.0 |
+
+**Bugs Found:**
+1. **plugin.yaml YAML invalid** — `name: @forge/...` needs quoting. Affects all plugins checked.
+2. **forge-cli new plugin command mismatch** — Compiled dist has different command structure than source; `forge new <plugin> <name>` instead of `forge new plugin <name>`.
+3. **blog-app App.ts duplicate plugin** — ApiGatewayPlugin instantiated twice (loader + manual), causing EADDRINUSE on port 3000.
+4. **Phase 1 plugins not updated** — api-gateway-plugin, config-plugin, logger-plugin still have `forgeVersion: ">=0.1.0"` instead of `">=0.2.0"`.

@@ -1,7 +1,8 @@
-name: @forge/api-gateway-plugin
+name: "@forge/api-gateway-plugin"
 version: 0.1.0
 description: Unified HTTP entry point. Routes requests to registered plugin handlers.
-forgeVersion: ">=0.1.0"
+forgeVersion: ">=0.2.0"
+tier: core
 dependencies:
   - @forge/config-plugin
   - @forge/logger-plugin

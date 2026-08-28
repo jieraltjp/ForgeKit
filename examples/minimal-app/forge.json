@@ -1,7 +1,7 @@
 {
   "name": "minimal-app",
-  "version": "0.1.0",
-  "forgeVersion": ">=0.1.0",
+  "version": "0.2.0",
+  "forgeVersion": ">=0.2.0",
   "plugins": [
     { "name": "@forge/config-plugin", "source": "../../packages/config-plugin", "enabled": true },
     { "name": "@forge/logger-plugin", "source": "../../packages/logger-plugin", "enabled": true },

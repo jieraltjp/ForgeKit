@@ -1,0 +1,19 @@
+name: "@forge/db-plugin"
+version: 0.2.0
+tier: core
+description: Unified database abstraction for SQLite (better-sqlite3), PostgreSQL, MongoDB
+entry: ./dist/index.js
+forgeVersion: '>=0.2.0'
+dependencies:
+  - '@forge/config-plugin'
+provides:
+  - db
+events:
+  - db:query
+  - db:connected
+  - db:error
+routes: []
+config:
+  db.driver: sqlite   # 'sqlite' | 'pg' | 'mysql' | 'mongodb'
+  db.connectionString: ''   # for mongodb/pg/mysql
+  db.filename: data/forge.db  # for sqlite

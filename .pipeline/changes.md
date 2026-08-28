@@ -1,72 +1,86 @@
-# Changes Summary — ForgeKit Phase 1 Implementation
+# Phase 2 Implementation Summary
 
-## All 47 files created
+**Date:** 2026-08-27
+**ForgeKit Version:** 0.2.0
 
-### Root level (5 files)
-- `pnpm-workspace.yaml` — pnpm workspaces definition (packages/*, examples/*)
-- `package.json` — root monorepo config with build/test scripts and devDeps
-- `tsconfig.base.json` — shared TypeScript config (ES2022, NodeNext, strict)
-- `vitest.config.ts` — shared vitest config (node environment, globals: true)
-- `.gitignore` — standard Node.js ignores (node_modules, dist, .env, etc.)
+## What Changed
 
-### packages/forge-spec/ (8 files)
-- `package.json` — @forge/spec package, build/pretest scripts
-- `tsconfig.json` — extends tsconfig.base.json
-- `src/index.ts` — barrel export re-exporting all spec modules
-- `src/api-contract.ts` — ForgePlugin, PluginContext, ConfigPluginAPI, LoggerPluginAPI, PluginBusAPI, RouteDefinition, HealthStatus, RouteHandler, etc.
-- `src/plugin-spec.ts` — PluginSpec, APIDefinition, DataModel, EventDefinition, DependencyDefinition, UsageExample interfaces
-- `src/plugin-yaml-schema.json` — JSON Schema for plugin.yaml validation (name, version, description, entry required; kebab-case pattern for name)
-- `src/errors.ts` — ForgeErrors const (FORGE001–FORGE013), ForgeError class
-- `src/events.ts` — CoreEvents const (forge:init/ready/stopping/stopped, plugin:init/started/stopped/error), PluginLifecyclePayload interface
+### Root Files
+- `package.json` — Added devDependencies: commander, ts-morph, better-sqlite3, jsonwebtoken, bcryptjs, chokidar, ioredis, and type packages. Updated version to 0.2.0.
+- `pnpm-workspace.yaml` — New file; declares workspace packages as `packages/*` and `examples/*`.
+- `tsconfig.base.json` — New file; shared base TypeScript config (ES2022, NodeNext, strict mode).
 
-### packages/forge-core/ (10 files)
-- `package.json` — @forge/core, depends on @forge/spec
-- `tsconfig.json` — extends tsconfig.base.json, references forge-spec
-- `src/index.ts` — barrel export (PluginBus, PluginRegistry, PluginLoader, PluginLifecycle, createPluginContext)
-- `src/plugin-bus.ts` — in-memory pub/sub event bus (emit/on/once/off with Map<string, Set<EventHandler>>)
-- `src/plugin-bus.test.ts` — 5 tests: emit, unsubscribe, once, no-op emit, no-op off
-- `src/plugin-context.ts` — createPluginContext factory function
-- `src/plugin-registry.ts` — reads plugin.yaml manifests, topological sort with cycle detection (PLUGIN_DEP_CYCLE), dependency validation (PLUGIN_DEP_MISSING)
-- `src/plugin-loader.ts` — dynamic import of plugin entry files, calls createPlugin factory, wraps errors as ForgeError
-- `src/plugin-lifecycle.ts` — manages init/start/stop in order, reverse-order stop, parallel health checks, emits plugin:init/started/stopped/error events, registers SIGINT/SIGTERM handlers
-- `src/plugin-lifecycle.test.ts` — 6 tests: init/start/stop order, reverse stop, duplicate init throw, error event emit, parallel health checks
+### forge-cli (`packages/forge-cli/`)
+- `package.json` — New package: `@forge/cli` with commander, chalk, fs-extra, yaml dependencies.
+- `tsconfig.json` — Extends `tsconfig.base.json`, outputs to `./dist`.
+- `src/index.ts` — CLI entry point with commander: `new plugin`, `check`, `generate`, `list`, `run`.
+- `src/commands/new-plugin.ts` — Scaffolds full plugin with package.json, tsconfig.json, plugin.yaml, PluginSpec.ts, index.ts, index.test.ts.
+- `src/commands/check.ts` — Validates plugin.yaml + PluginSpec.ts consistency; outputs JSON or text. JSON format: `{ valid: boolean, errors: [], warnings: [] }`.
+- `src/commands/generate.ts` — Creates `src/handlers/<component>.ts` RouteHandler stub.
+- `src/commands/list.ts` — Reads forge.json, prints plugin table.
+- `src/commands/run.ts` — Spawns node dist/index.js for an app.
 
-### packages/config-plugin/ (6 files)
-- `package.json` — @forge/config-plugin, depends on @forge/spec
-- `tsconfig.json` — extends tsconfig.base.json, references forge-spec
-- `plugin.yaml` — manifest (name, version, description, provides: config, events: config:updated)
-- `src/PluginSpec.ts` — configPluginSpec with api definitions (get/set/has/getAll/onUpdate), 2 usage examples
-- `src/index.ts` — ConfigPlugin class (Map config store, watchers Set, FORGE_ env var override), default export createPlugin factory
-- `src/index.test.ts` — 5 tests: undefined key, fallback, set/get, watcher notification, getAll
+### plugin-spec-generator (`packages/plugin-spec-generator/`)
+- `package.json`, `tsconfig.json` — New package: `@forge/spec-generator` with ts-morph, chalk, fs-extra.
+- `src/index.ts` — Uses ts-morph AST parsing to generate `src/PluginSpec.generated.ts` from plugin source. Never overwrites existing `PluginSpec.ts`.
+- `src/index.test.ts` — Tests AST parsing, public method extraction, events array extraction.
 
-### packages/logger-plugin/ (6 files)
-- `package.json` — @forge/logger-plugin, depends on @forge/spec
-- `tsconfig.json` — extends tsconfig.base.json, references forge-spec
-- `plugin.yaml` — manifest (provides: logger)
-- `src/PluginSpec.ts` — loggerPluginSpec with debug/info/warn/error/child API definitions, 2 usage examples
-- `src/index.ts` — LoggerPlugin class (LEVEL_ORDER, json/text output, child() with tag merging), default export createPlugin factory
-- `src/index.test.ts` — 4 tests: default logging, threshold filtering, child tag merging, invalid level init
+### db-plugin (`packages/db-plugin/`)
+- `package.json` — New package: `@forge/db-plugin`. Uses `sql.js` (WASM SQLite) instead of better-sqlite3 (no native compilation).
+- `tsconfig.json`, `plugin.yaml` — Standard config.
+- `src/index.ts` — `DbPlugin` implements `ForgePlugin`, provides `db` capability, reads config for driver/filename.
+- `src/adapters/index.ts` — `DbAdapter` interface + `SqliteAdapter` (sql.js, persists to file) + `MongoAdapter` (mongodb).
+- `src/PluginSpec.ts` — Full spec with `db.find`, `db.findOne`, `db.insert`, `db.update`, `db.delete`, `db.migrate` API docs.
+- `src/index.test.ts` — 4 tests using temp files for SQLite.
 
-### packages/api-gateway-plugin/ (5 files)
-- `package.json` — @forge/api-gateway-plugin, depends on @forge/spec
-- `tsconfig.json` — extends tsconfig.base.json, references forge-spec
-- `plugin.yaml` — manifest (depends on config-plugin and logger-plugin, provides: http-server, events: http:request/http:response)
-- `src/PluginSpec.ts` — apiGatewayPluginSpec with http.registerRoute/start/stop API, 2 dependencies, 2 usage examples
-- `src/index.ts` — ApiGatewayPlugin class (HTTP server with parametric route matching, /health and /routes built-in endpoints, http:request/http:response bus events, registerRoute method), default export createPlugin factory
+### auth-plugin (`packages/auth-plugin/`)
+- `package.json` — New package: `@forge/auth-plugin` with jsonwebtoken, bcryptjs.
+- `src/index.ts` — `AuthPlugin`: `sign()`, `verify()`, `middleware()`, `hashPassword()`, `verifyPassword()`.
+- `src/PluginSpec.ts` — Full spec with all auth API methods.
+- `src/index.test.ts` — 5 tests: sign/verify JWT, reject invalid tokens, reject wrong secret, hash/verify passwords, health check.
 
-### examples/minimal-app/ (5 files)
-- `package.json` — minimal-app, depends on all 5 workspace packages
-- `tsconfig.json` — extends tsconfig.base.json, references all 5 packages
-- `forge.json` — manifest listing 3 plugins (config-plugin, logger-plugin, api-gateway-plugin) with sources and globalConfig
-- `src/App.ts` — buildApp() that instantiates 3 plugins, wires PluginContext, calls init/start, returns app handle with stop()
-- `src/index.ts` — entry point that calls buildApp(), registers SIGINT/SIGTERM shutdown handlers
+### events-plugin (`packages/events-plugin/`)
+- `package.json` — New package: `@forge/events-plugin` with ioredis.
+- `src/index.ts` — `EventsPlugin` implements `PluginBusAPI` directly. Supports 'memory' and 'redis' adapters. Redis wraps ioredis; local handlers stored in `localHandlers`.
+- `src/PluginSpec.ts` — Full spec for `events.emit`, `events.on`, `events.once`, `events.off`.
+- `src/index.test.ts` — 4 tests: name check, emit/receive events, unsubscribe.
 
-## Key implementation details
-- All imports use `.js` extensions (ES module NodeNext compliance)
-- Test files import `vi` from 'vitest' and use `globals: true` in vitest config
-- plugin-yaml-schema.json uses JSON Schema draft-07 format with kebab-case name pattern
-- PluginLoader wraps all import errors in ForgeError(PLUGIN_LOAD_FAILED, cause=originalError)
-- PluginRegistry uses a minimal YAML parser (no external yaml library dependency)
-- LoggerPlugin.child() returns a new LoggerPlugin instance with merged tags (not a Proxy)
-- ApiGatewayPlugin handles both exact and parametric route matching (/config/:key)
-- All PluginSpec objects include at least 2 usage examples with code blocks
+### Dynamic Plugin Loading (forge-core + minimal-app)
+- `packages/forge-core/src/plugin-loader.ts` — Added `loadPluginFromPath()` and `loadAllFromForgeJson()`. Workspace paths, npm packages, absolute paths supported. Uses `pathToFileURL` for Windows compatibility.
+- `packages/forge-core/src/index.ts` — Exports `ForgeJson` and `ForgeJsonPlugin` types.
+- `packages/forge-core/src/plugin-loader.test.ts` — 3 tests: load enabled plugins, skip disabled, throw for nonexistent.
+- `examples/minimal-app/src/App.ts` — Updated to use `PluginLoader.loadAllFromForgeJson()`, supports `hotReload` option.
+- `examples/minimal-app/src/index.ts` — Updated to pass `{ hotReload: true }` option.
+- `examples/minimal-app/forge.json` — Updated `forgeVersion` to `>=0.2.0`.
+- `examples/minimal-app/package.json` — Updated version to `0.2.0`, added `chokidar` dependency.
+
+### blog-app (`examples/blog-app/`)
+- Full blog application with users, posts, auth, JWT, database.
+- `package.json`, `tsconfig.json`, `forge.json` — Standard config, all Phase 2 plugins wired.
+- `src/index.ts` — Entry point that runs migrations then starts app.
+- `src/migrate.ts` — Creates `users` and `posts` tables with SQLite (sql.js).
+- `src/App.ts` — `buildApp()` wires all 6 plugins + loads from forge.json.
+- `src/handlers/index.ts` — Routes: `GET /posts`, `GET /posts/:slug`, `POST /posts` (JWT), `POST /auth/login`, `POST /auth/register`.
+- `src/handlers/index.test.ts` — 3 tests: password hash/verify, JWT sign/verify, SQLite insert/find.
+
+### Hot Reload (`examples/minimal-app/src/hot-reload.ts`)
+- `src/hot-reload.ts` — `HotReloadManager` using chokidar to watch `packages/*/src/**/*.ts`. Debounces 500ms, runs `pnpm --filter @forge/<name> build` in child process, emits `plugin:reloading` and `plugin:reloaded` events.
+- `src/hot-reload.test.ts` — 3 tests: create manager, stop gracefully, emit event on bus.
+
+### Documentation
+- `SPEC.md` — New root spec with Phase 1+2 status.
+- `README.md` — New root readme with Phase 2 feature summary and quick start.
+- `docs/ARCHITECTURE.md` — Added Phase 2 sections: db-plugin, auth-plugin, events-plugin, forge-cli, dynamic loading, hot reload.
+- `docs/PLUGIN_SPEC.md` — Added Phase 2 plugin section + PluginSpec Generator documentation.
+- `docs/AI_AGENT_GUIDE.md` — Added Phase 2 plugin notes + forge-cli workflow.
+
+## Key Technical Decisions
+- `better-sqlite3` replaced with `sql.js` (pure WASM) due to missing Node 24 prebuilt binaries on Windows.
+- `ioredis` v5 uses named `Redis` import (not default); `InstanceType<typeof Redis>` pattern used.
+- All TypeScript: strict mode, ES modules, `.js` extensions in imports.
+- `PluginSpec` generator creates `PluginSpec.generated.ts` side-by-side — never overwrites existing spec.
+
+## Test Results
+- **11 test files, 45 tests — all passing**
+- `pnpm -r run build` — all 12 workspace packages compile successfully
+- `pnpm test` — 45/45 passing

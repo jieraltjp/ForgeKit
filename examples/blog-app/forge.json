@@ -1,0 +1,24 @@
+{
+  "name": "blog-app",
+  "version": "0.2.0",
+  "forgeVersion": ">=0.2.0",
+  "plugins": [
+    { "name": "@forge/config-plugin", "source": "../../packages/config-plugin", "enabled": true },
+    { "name": "@forge/logger-plugin", "source": "../../packages/logger-plugin", "enabled": true },
+    { "name": "@forge/api-gateway-plugin", "source": "../../packages/api-gateway-plugin", "enabled": true },
+    { "name": "@forge/db-plugin", "source": "../../packages/db-plugin", "enabled": true },
+    { "name": "@forge/auth-plugin", "source": "../../packages/auth-plugin", "enabled": true },
+    { "name": "@forge/events-plugin", "source": "../../packages/events-plugin", "enabled": true }
+  ],
+  "globalConfig": {
+    "log.level": "info",
+    "log.format": "text",
+    "server.port": 3000,
+    "server.host": "0.0.0.0",
+    "db.driver": "sqlite",
+    "db.filename": "./data/blog.db",
+    "auth.jwtSecret": "blog-app-dev-secret-change-in-prod",
+    "auth.jwtExpiresIn": "7d",
+    "events.adapter": "memory"
+  }
+}

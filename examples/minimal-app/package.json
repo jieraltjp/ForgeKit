@@ -1,6 +1,6 @@
 {
   "name": "minimal-app",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "main": "./dist/index.js",
   "dependencies": {
@@ -9,7 +9,8 @@
     "@forge/config-plugin": "workspace:*",
     "@forge/logger-plugin": "workspace:*",
     "@forge/api-gateway-plugin": "workspace:*",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "chokidar": "^3.5.3"
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",

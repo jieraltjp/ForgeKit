@@ -1,0 +1,19 @@
+name: "@forge/auth-plugin"
+version: 0.2.0
+tier: core
+description: JWT-based authentication plugin
+entry: ./dist/index.js
+forgeVersion: '>=0.2.0'
+dependencies:
+  - '@forge/config-plugin'
+provides:
+  - auth
+events:
+  - auth:login
+  - auth:token-verified
+  - auth:error
+routes: []
+config:
+  auth.jwtSecret: change-me-in-production   # REQUIRED in production
+  auth.jwtExpiresIn: 7d                    # '1h', '30m', '7d', '30d'
+  auth.jwtAlgorithm: HS256

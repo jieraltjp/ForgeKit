@@ -1,0 +1,15 @@
+name: "@forge/events-plugin"
+version: 0.2.0
+tier: core
+description: Event bus — in-memory PluginBus or Redis-backed pub/sub for distributed deployments
+entry: ./dist/index.js
+forgeVersion: '>=0.2.0'
+dependencies: []
+provides:
+  - events
+events:
+  - events:adapter-changed
+routes: []
+config:
+  events.adapter: memory   # 'memory' | 'redis'
+  events.redisUrl: redis://localhost:6379

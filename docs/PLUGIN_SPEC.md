@@ -346,3 +346,74 @@ Before publishing, verify:
 - [ ] All tests pass
 - [ ] No hardcoded config values — always use `ctx.config.get()`
 - [ ] All errors use named `ForgeError` codes from `@forge/spec`
+
+---
+
+## Phase 2 Plugins
+
+### Database Plugin (@forge/db-plugin)
+
+The DB plugin exposes `ctx.db` with full CRUD + migration.
+
+```typescript
+// any-plugin/src/index.ts
+export class MyPlugin implements ForgePlugin {
+  async init(ctx: PluginContext) {
+    // AI reads PluginSpec and generates:
+    const posts = await ctx.db.find('posts', { authorId: 1 });
+    const post = await ctx.db.findOne('posts', { slug: 'my-post' });
+    await ctx.db.insert('posts', { title: '...', slug: '...', content: '...', authorId: 1 });
+    await ctx.db.update('posts', { id: 1 }, { title: 'Updated' });
+    await ctx.db.delete('posts', { id: 1 });
+    await ctx.db.migrate('CREATE TABLE IF NOT EXISTS ...');
+  }
+}
+```
+
+The underlying driver (SQLite/PostgreSQL/MongoDB) is configured in forge.json and
+does not affect plugin code.
+
+### Authentication Plugin (@forge/auth-plugin)
+
+```typescript
+// Sign a JWT after login
+const token = ctx.auth.sign({ sub: userId, username });
+const payload = await ctx.auth.verify(token);
+
+// Protect a route — middleware returns 401 on failure
+const authResult = await ctx.auth.middleware()(params, body, query, req);
+
+// Hash and verify passwords
+const hash = await ctx.auth.hashPassword(password);
+const ok = await ctx.auth.verifyPassword(input, storedHash);
+```
+
+### Events Plugin (@forge/events-plugin)
+
+```typescript
+// Emit events
+ctx.bus.emit('user:registered', { userId, email });
+
+// Subscribe (returns unsubscribe fn)
+const unsub = ctx.bus.on('user:registered', (payload) => { /* ... */ });
+unsub(); // cleanup
+
+// Redis adapter for multi-instance
+// Set events.adapter=redis in forge.json
+```
+
+## PluginSpec Generator
+
+Run `@forge/spec-generator` to auto-generate a draft `PluginSpec.generated.ts`:
+
+```bash
+node packages/plugin-spec-generator/dist/index.js packages/my-plugin
+# Creates: packages/my-plugin/src/PluginSpec.generated.ts
+```
+
+The generator:
+1. Parses `src/index.ts` with ts-morph
+2. Extracts class name, public methods, parameter types
+3. Creates `PluginSpec` stubs with `TODO` descriptions
+
+Always review and merge the generated spec manually.

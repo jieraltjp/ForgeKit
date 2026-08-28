@@ -295,3 +295,47 @@ Think of ForgeKit as a **structured workspace**:
 Always read bottom-up: start with `forge.json`, then your target plugin's spec, then its implementation.
 
 This structure means you can join any ForgeKit project and be productive in minutes — not hours.
+
+---
+
+## Phase 2 Plugins — What AI Agents Need to Know
+
+### @forge/db-plugin — Write Any Database Code
+
+AI agents do NOT need to know whether the app uses SQLite, PostgreSQL, or MongoDB.
+The `ctx.db` interface is the same for all drivers.
+
+Read `packages/db-plugin/src/PluginSpec.ts` → write DB operations.
+The PluginSpec tells you every method, parameter type, and example.
+
+### @forge/auth-plugin — JWT Authentication
+
+Use `ctx.auth.sign()` to issue tokens, `ctx.auth.verify()` to validate,
+`ctx.auth.middleware()` to protect routes.
+
+Never store passwords in plaintext — use `ctx.auth.hashPassword()` and
+`ctx.auth.verifyPassword()`.
+
+### @forge/events-plugin — Cross-Plugin Communication
+
+Emitting events decouples plugins. Plugin A emits `user:created`, Plugin B
+subscribes. Neither plugin imports the other directly.
+
+### @forge/spec-generator — Auto-Generate Your PluginSpec
+
+Before writing your plugin spec manually, run the generator:
+
+```bash
+node packages/plugin-spec-generator/dist/index.js packages/my-plugin
+```
+
+Review the generated `PluginSpec.generated.ts` and merge into your `PluginSpec.ts`.
+
+## forge-cli Workflow
+
+1. `forge new plugin my-feature` — scaffold plugin in `packages/my-feature/`
+2. Write `src/index.ts` implementation
+3. `node packages/plugin-spec-generator/dist/index.js packages/my-feature` — generate draft spec
+4. `forge check --plugin my-feature` — validate spec compliance
+5. Fix any errors/warnings
+6. Add plugin to `examples/blog-app/forge.json` and test end-to-end

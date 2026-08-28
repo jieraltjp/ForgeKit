@@ -1,0 +1,24 @@
+{
+  "name": "@forge/db-plugin",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Database abstraction plugin — SQLite (sql.js WASM), PostgreSQL, MongoDB adapters. AI reads PluginSpec and generates any DB code.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@forge/spec": "workspace:*",
+    "sql.js": "^1.10.3",
+    "mongodb": "^6.3.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.10.9",
+    "@types/node": "^20.0.0",
+    "vitest": "^1.4.0"
+  }
+}

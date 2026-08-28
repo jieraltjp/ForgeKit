@@ -397,3 +397,83 @@ Define custom events in your plugin's `PluginSpec.events[]`. Emit them via `ctx.
 | `@forge/auth-plugin` | JWT authentication |
 | `@forge/events-plugin` | Redis-backed event bus adapter |
 | Plugin spec generator | Auto-generate `PluginSpec.ts` from code |
+
+---
+
+## Phase 2 Plugins
+
+### @forge/db-plugin — Database Abstraction
+
+The DB plugin provides a unified interface across SQLite, PostgreSQL, and MongoDB.
+AI agents never need to know which DB driver is in use — they follow the PluginSpec.
+
+Key config keys:
+- `db.driver`: 'sqlite' | 'pg' | 'mysql' | 'mongodb'
+- `db.filename`: SQLite data file path (default: `data/forge.db`)
+- `db.connectionString`: Connection URI for mongodb/pg/mysql
+
+Usage from any plugin:
+```typescript
+// Read a post by slug — works with any DB driver
+const post = await ctx.db.findOne('posts', { slug: params.slug });
+
+// Create a new post
+const newPost = await ctx.db.insert('posts', { title, slug, content, authorId: 1 });
+
+// Run migrations
+await ctx.db.migrate('CREATE TABLE ...');
+```
+
+### @forge/auth-plugin — JWT Authentication
+
+Provides `ctx.auth.sign()`, `ctx.auth.verify()`, `ctx.auth.middleware()`, `ctx.auth.hashPassword()`, `ctx.auth.verifyPassword()`.
+
+Key config keys:
+- `auth.jwtSecret`: signing secret (REQUIRED in production)
+- `auth.jwtExpiresIn`: token TTL, default `'7d'`
+- `auth.jwtAlgorithm`: signing algorithm, default `'HS256'`
+
+### @forge/events-plugin — Event Bus (Distributed)
+
+Provides the same `PluginBusAPI` interface as `PluginBus` but supports Redis pub/sub
+for multi-instance deployments.
+
+Key config keys:
+- `events.adapter`: 'memory' (default) | 'redis'
+- `events.redisUrl`: Redis connection URL
+
+## forge-cli
+
+The ForgeKit CLI (`@forge/cli`) provides all developer tooling:
+
+| Command | Description |
+|---|---|
+| `forge new plugin <name>` | Scaffold a new plugin in `packages/<name>/` |
+| `forge check --plugin <name>` | Validate PluginSpec compliance, output JSON/text |
+| `forge generate <plugin> <component>` | Generate `src/handlers/<component>.ts` |
+| `forge list` | Print plugins from forge.json |
+| `forge run` | Execute app dist/index.js |
+
+## Dynamic Plugin Loading
+
+Phase 2 replaces hardcoded plugin instantiation with `PluginLoader`.
+
+`PluginLoader` resolves plugin sources from:
+1. **Workspace paths**: `../../packages/config-plugin` → resolved relative to app root
+2. **npm packages**: `@forge/db-plugin` → resolved via node_modules
+3. **Absolute paths**: `/opt/plugins/my-plugin` → used as-is
+
+The loader reads `plugin.yaml` and `package.json` to determine entry points,
+then uses Node.js dynamic `import()` with `file://` URLs for Windows compatibility.
+
+## Hot Reload
+
+The `HotReloadManager` (`examples/minimal-app/src/hot-reload.ts`) watches plugin
+source directories using chokidar. On change:
+1. Debounce 500ms
+2. Run `pnpm --filter @forge/<name> build`
+3. Emit `plugin:reloading` on the bus
+4. Call `plugin.stop()` and re-init
+5. Emit `plugin:reloaded` on the bus
+
+Enable via `app.hotReload = true` in config or `buildApp(path, { hotReload: true })`.

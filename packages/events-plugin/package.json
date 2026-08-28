@@ -1,0 +1,20 @@
+{
+  "name": "@forge/events-plugin",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "Event bus plugin — in-memory (default) or Redis-backed pub/sub",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": "./dist/index.js" },
+  "scripts": { "build": "tsc --project tsconfig.json", "test": "vitest run" },
+  "dependencies": {
+    "@forge/spec": "workspace:*",
+    "@forge/core": "workspace:*",
+    "ioredis": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/ioredis": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "vitest": "^1.4.0"
+  }
+}

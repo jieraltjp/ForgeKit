@@ -2,7 +2,7 @@ import { buildApp } from './App.js';
 import { resolve } from 'path';
 import process from 'node:process';
 
-const app = await buildApp(resolve(import.meta.dirname, '../forge.json'));
+const app = await buildApp(resolve(import.meta.dirname, '../forge.json'), { hotReload: true });
 
 process.on('SIGINT', async () => {
   console.log('\nShutting down...');
