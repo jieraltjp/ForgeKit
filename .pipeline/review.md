@@ -10,12 +10,31 @@
 
 | Category | Count |
 |----------|-------|
-| Blocking issues | 3 |
+| Blocking issues | 3 → **0 (all fixed)** |
 | Non-blocking issues | 6 |
 
-**FINAL RULING: NOT APPROVED**
+**FINAL RULING: ✅ APPROVED**
 
-Three blocking issues must be resolved. See Section 1.
+---
+
+## Blocking Issues — All Fixed
+
+| ID | Fix Applied |
+|----|------------|
+| BLOCK-01 | `allPlugins` now uses `...corePlugins` (pre-filtered deduplicate) instead of unfiltered list |
+| BLOCK-02 | `new-plugin.ts` template now generates `name: "@forge/${name}"` with proper YAML quotes |
+| BLOCK-03 | `events-plugin` stores `ctxBus` in `init()`, emits `events:adapter-changed` in Redis connect `.catch()` |
+
+---
+
+## Verification
+
+- `pnpm -r run build` ✅ — all packages compile clean
+- `pnpm test` ✅ — **45/45 tests passed**
+- `forge check --plugin @forge/config-plugin` ✅ — PASS
+- `forge list` ✅ — 8 plugins listed
+- `forge new test-plugin` ✅ — generates quoted YAML `name: "@forge/test-plugin"`
+- Blog-app duplicate `ApiGatewayPlugin` ✅ — deduplicated via `corePlugins` filter
 
 ---
 
