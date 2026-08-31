@@ -14,6 +14,7 @@ export class EventsPlugin implements ForgePlugin, PluginBusAPI {
 
   private adapter: 'memory' | 'redis' = 'memory';
   private bus: PluginBus;
+  private ctxBus: PluginBusAPI | null = null;
   private redis: Redis | null = null;
   private redisUrl = '';
   private startTime = 0;
@@ -27,6 +28,7 @@ export class EventsPlugin implements ForgePlugin, PluginBusAPI {
   async init(ctx: PluginContext): Promise<void> {
     this.adapter = ctx.config.get<'memory' | 'redis'>('events.adapter', 'memory') ?? 'memory';
     this.redisUrl = ctx.config.get<string>('events.redisUrl', 'redis://localhost:6379') ?? 'redis://localhost:6379';
+    this.ctxBus = ctx.bus;
   }
 
   async start(): Promise<void> {
@@ -36,6 +38,7 @@ export class EventsPlugin implements ForgePlugin, PluginBusAPI {
       await this.redis.connect().catch((err: Error) => {
         console.warn(`[events-plugin] Redis connect failed (falling back to memory): ${err.message}`);
         this.adapter = 'memory';
+        this.ctxBus?.emit('events:adapter-changed', { from: 'redis', to: 'memory', reason: err.message });
       });
     }
   }

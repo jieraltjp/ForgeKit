@@ -1,0 +1,1 @@
+const fs=require("fs");const b64=process.argv[2];fs.writeFileSync("D:/Programme/jieralt/SeoTest/.pipeline/review.md",Buffer.from(b64,"base64").toString("utf8"));console.log("done");

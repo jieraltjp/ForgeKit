@@ -36,7 +36,7 @@ export async function buildApp(forgeJsonPath: string) {
   ].filter(p => !loadedNames.has(p.name));
 
   const allPlugins: ForgePlugin[] = [
-    configPlugin, loggerPlugin, eventsPlugin, dbPlugin, authPlugin, apiGatewayPlugin,
+    ...corePlugins,   // corePlugins is already deduplicated against loadedPlugins
     ...loadedPlugins,
   ];
 
